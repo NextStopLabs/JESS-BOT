@@ -137,7 +137,7 @@ async def on_message(message: discord.Message):
 
 async def main():
     # Start FastAPI server in the background
-    config = uvicorn.Config(app=app, host="127.0.0.1", port=8080, log_level="info", loop="asyncio")
+    config = uvicorn.Config(app=app, host="0.0.0.0", port=8080, log_level="info", loop="asyncio")
     server = uvicorn.Server(config)
     server_task = asyncio.create_task(server.serve())
 
