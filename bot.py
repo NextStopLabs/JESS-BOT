@@ -116,13 +116,13 @@ async def on_message(message: discord.Message):
         try:
             if files:
                 response = await client.post(
-                    "http://localhost:8000/api/discord-message/",
+                    "https://v2.mybustimes.cc/api/discord-message/",
                     data=payload,
                     files=files,
                 )
             else:
                 response = await client.post(
-                    "http://localhost:8000/api/discord-message/",
+                    "https://v2.mybustimes.cc/api/discord-message/",
                     json=payload,
                 )
             response.raise_for_status()
