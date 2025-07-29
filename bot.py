@@ -98,13 +98,29 @@ async def on_message(message: discord.Message):
 
     channel = message.channel
 
+    # Only act if this is a thread in a Forum
+    if isinstance(channel, discord.Thread) and isinstance(channel.parent, discord.ForumChannel):
+        thread_id = str(channel.id)
+
+        # Check if this thread exists in your Django DB
+        async with httpx.AsyncClient() as client:
+            check_response = await client.get(f"http://localhost:8000/api/check-thread/{thread_id}/")
+            if check_response.status_code == 404:
+                # Thread doesn't exist in Django, create it
+                create_payload = {
+                    "discord_channel_id": thread_id,
+                    "title": channel.name,
+                    "created_by": str(message.author),  # Discord username
+                    "first_post": message.content,
+                }
+                await client.post("http://localhost:8000/api/create-thread/", json=create_payload)
+
+    # Continue posting the message to Django
     payload = {
         "thread_channel_id": channel.id,
         "author": str(message.author),
         "content": message.content,
     }
-
-    print(f"Sending message to Django API: {payload}")
 
     files = None
     if message.attachments:
@@ -115,21 +131,21 @@ async def on_message(message: discord.Message):
     async with httpx.AsyncClient() as client:
         try:
             if files:
-                response = await client.post(
-                    "https://v2.mybustimes.cc/api/discord-message/",
+                await client.post(
+                    "http://localhost:8000/api/discord-message/",
                     data=payload,
                     files=files,
                 )
             else:
-                response = await client.post(
-                    "https://v2.mybustimes.cc/api/discord-message/",
+                await client.post(
+                    "http://localhost:8000/api/discord-message/",
                     json=payload,
                 )
-            response.raise_for_status()
         except Exception as e:
             print(f"Failed to send message to Django API: {e}")
 
     await bot.process_commands(message)
+
 
 async def main():
     config = uvicorn.Config(app=app, host="0.0.0.0", port=8080, log_level="info", loop="asyncio")
