@@ -13,13 +13,13 @@ import httpx
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID"))
-CATEGORY_ID = int(os.getenv("FORUM_CATEGORY_ID"))
+FORUM_CHANNEL_ID = int(os.getenv("FORUM_CHANNEL_ID"))  # Forum channel ID now
 
 # Discord bot setup
 intents = discord.Intents.default()
 intents.guilds = True
 intents.guild_messages = True
-intents.message_content = True 
+intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 bot_ready = asyncio.Event()
@@ -30,33 +30,37 @@ app = FastAPI()
 # API request model
 class ChannelRequest(BaseModel):
     title: str
+    content: str = "Discussion started via API"
 
-class MessageRequest(BaseModel):
-    channel_id: int
-    send_by: str
-    message: str
-    image: UploadFile = File(None)
-
-@app.post("/create-channel")
-async def create_channel(request: ChannelRequest):
+@app.post("/create-thread")
+async def create_thread(request: ChannelRequest):
     await bot_ready.wait()
 
     guild = bot.get_guild(GUILD_ID)
     if guild is None:
         raise HTTPException(status_code=404, detail="Guild not found")
 
-    category = guild.get_channel(CATEGORY_ID)
-    if category is None:
-        raise HTTPException(status_code=404, detail="Category not found")
+    forum_channel = guild.get_channel(FORUM_CHANNEL_ID)
+    if forum_channel is None or not isinstance(forum_channel, discord.ForumChannel):
+        raise HTTPException(status_code=404, detail="Forum channel not found")
 
-    # Create channel
-    channel = await guild.create_text_channel(name=request.title, category=category)
+    # Create thread (forum post)
+    result = await forum_channel.create_thread(name=request.title, content=request.content)
+
+    # Some forks return (thread, message), some return thread
+    if isinstance(result, tuple):
+        thread, message = result
+    else:
+        thread = result
+        message = None
 
     return {
-        "channel_id": channel.id,
-        "channel_name": channel.name,
-        "category": category.name
+        "thread_id": thread.id,
+        "thread_name": thread.name,
+        "forum_name": forum_channel.name,
+        "first_message_id": message.id if message else None,
     }
+
 
 @app.post("/send-message")
 async def send_message(
@@ -89,25 +93,21 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: discord.Message):
-    # Ignore messages from the bot itself to avoid loops
     if message.author == bot.user:
         return
 
-    # Check if message is from a channel we track (has an associated Thread)
     channel = message.channel
 
     payload = {
-        "thread_channel_id": channel.id,  # or use channel.id directly
+        "thread_channel_id": channel.id,
         "author": str(message.author),
         "content": message.content,
     }
 
     print(f"Sending message to Django API: {payload}")
 
-    # If there is an attachment, send it as well (optional)
     files = None
     if message.attachments:
-        # Take first attachment as example
         attachment = message.attachments[0]
         file_bytes = await attachment.read()
         files = {"image": (attachment.filename, file_bytes)}
@@ -115,14 +115,12 @@ async def on_message(message: discord.Message):
     async with httpx.AsyncClient() as client:
         try:
             if files:
-                # multipart/form-data with files
                 response = await client.post(
                     "http://localhost:8000/api/discord-message/",
                     data=payload,
                     files=files,
                 )
             else:
-                # JSON payload
                 response = await client.post(
                     "http://localhost:8000/api/discord-message/",
                     json=payload,
@@ -131,20 +129,14 @@ async def on_message(message: discord.Message):
         except Exception as e:
             print(f"Failed to send message to Django API: {e}")
 
-    # Also process commands if you use commands.Bot
     await bot.process_commands(message)
 
-
 async def main():
-    # Start FastAPI server in the background
     config = uvicorn.Config(app=app, host="0.0.0.0", port=8080, log_level="info", loop="asyncio")
     server = uvicorn.Server(config)
     server_task = asyncio.create_task(server.serve())
 
-    # Start Discord bot
     await bot.start(TOKEN)
-
-    # Wait for both tasks (if bot exits)
     await server_task
 
 if __name__ == "__main__":
