@@ -4,6 +4,7 @@ from discord.ext import commands
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 import asyncio
+from typing import Union
 
 router = APIRouter()
 
@@ -41,7 +42,7 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
 
     @router.post("/send-message")
     async def send_message(
-        channel_id: int = Form(...),
+        channel_id: Union[int, str] = Form(...),
         send_by: str = Form(...),
         message: str = Form(...),
         image: UploadFile = File(None)
