@@ -25,7 +25,7 @@ class ForumCog(commands.Cog):
             thread_id = str(channel.id)
 
             async with httpx.AsyncClient() as client:
-                check_response = await client.get(f"http://localhost:8000/api/check-thread/{thread_id}/")
+                check_response = await client.get(f"http://host.docker.internal:8000/api/check-thread/{thread_id}/")
                 if check_response.status_code == 404:
                     create_payload = {
                         "discord_channel_id": thread_id,
@@ -33,7 +33,7 @@ class ForumCog(commands.Cog):
                         "created_by": str(message.author),
                         "first_post": message.content,
                     }
-                    await client.post("http://localhost:8000/api/create-thread/", json=create_payload)
+                    await client.post("http://host.docker.internal:8000/api/create-thread/", json=create_payload)
 
         payload = {
             "thread_channel_id": channel.id,
@@ -51,13 +51,13 @@ class ForumCog(commands.Cog):
             try:
                 if files:
                     await client.post(
-                        "http://localhost:8000/api/discord-message/",
+                        "http://host.docker.internal:8000/api/discord-message/",
                         data=payload,
                         files=files,
                     )
                 else:
                     await client.post(
-                        "http://localhost:8000/api/discord-message/",
+                        "http://host.docker.internal:8000/api/discord-message/",
                         json=payload,
                     )
             except Exception as e:
