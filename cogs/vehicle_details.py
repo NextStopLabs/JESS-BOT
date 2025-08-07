@@ -4,7 +4,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import aiohttp
+import logging
 from main import GUILD_ID
+from urllib.parse import quote
+
+# Setup logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class VehicleDetails(commands.Cog):
     def __init__(self, bot):
@@ -24,38 +30,82 @@ class VehicleDetails(commands.Cog):
         fleet_number: str = '',
         operator_name: str = ''
     ):
+        print("Command invoked: /vehicle-details")
+        print(f"Input - Reg: {reg}, Fleet Number: {fleet_number}, Operator: {operator_name}")
+
         await interaction.response.defer(thinking=True)
 
         url = (
             f"https://v2.mybustimes.cc/api/operator/fleet/"
-            f"?operator__operator_name={operator_name}&fleet_number={fleet_number}&reg={reg}"
+            f"?operator__operator_name={operator_name}&fleet_number={fleet_number}&reg={reg}&limit=10"
         )
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    await interaction.followup.send(f"Failed to fetch data (HTTP {resp.status})")
-                    return
+        print(f"Constructed URL: {url}")
 
-                data = await resp.json()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    print(f"API Response Status: {resp.status}")
+                    if resp.status != 200:
+                        await interaction.followup.send(f"Failed to fetch data (HTTP {resp.status})")
+                        return
 
-        if not data:
+                    json_data = await resp.json()
+                    print(f"API Response Data: {json_data}")
+        except Exception as e:
+            logger.exception("Exception occurred while fetching vehicle details")
+            await interaction.followup.send(f"An error occurred: {str(e)}")
+            return
+
+        if not json_data or not json_data.get("results"):
+            print("No results returned from API")
             await interaction.followup.send("No vehicle found with the given details.")
             return
 
-        # Adjust this depending on the actual structure of your API response
-        vehicle = data[0]  # Use the first result
+        vehicle = json_data["results"][0]
+        print(f"Using first vehicle from results: {vehicle}")
+
+        # Build embed
+        description = "Result for"
+        if reg:
+            description = description + f", Reg: `{reg}`"
+
+        if fleet_number:
+            description = description + f", Fleet Number: `{fleet_number}`"
+
+        if operator_name:
+            description = description + f", Operator: `{operator_name}`"
 
         embed = discord.Embed(
             title="Vehicle Details",
-            description=f"Search result for Reg: `{reg}`, Fleet Number: `{fleet_number}`, Operator: `{operator_name}`",
+            description=description,
             color=discord.Color.blue()
         )
 
-        for key, value in vehicle.items():
-            embed.add_field(name=key.replace('_', ' ').title(), value=str(value), inline=False)
+        # Inline Group 1
+        embed.add_field(name="Fleet Number", value=vehicle.get("fleet_number", "N/A"), inline=True)
+        embed.add_field(name="Registration", value=vehicle.get("reg", "N/A"), inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)  # Spacer to force new line
 
-        await interaction.followup.send(embed=embed)
+        # Inline Group 2
+        vehicle_type = vehicle.get("vehicle_type_data", {})
+        embed.add_field(name="Type Name", value=vehicle_type.get("type_name", "N/A"), inline=True)
+        embed.add_field(name="Double Decker", value=str(vehicle_type.get("double_decker", "N/A")), inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+
+        # Inline Group 3
+        embed.add_field(name="Type", value=vehicle_type.get("type", "N/A"), inline=True)
+        embed.add_field(name="Fuel", value=vehicle_type.get("fuel", "N/A"), inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+
+        # Operator name (full width)
+        operator = vehicle.get("operator", {})
+        operator_name = operator.get("operator_name", "N/A")
+        operator_name_encoded = quote(operator_name)  # encode spaces only here
+
+        embed.add_field(name="Operator", value=operator_name, inline=False)
+        embed.add_field(name="More Info", value=f"[Click here]({link})", inline=False)
+
 
 async def setup(bot):
     await bot.add_cog(VehicleDetails(bot))
