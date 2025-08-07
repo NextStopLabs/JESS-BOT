@@ -57,54 +57,59 @@ class VehicleDetails(commands.Cog):
             await interaction.followup.send(f"An error occurred: {str(e)}")
             return
 
-        if not json_data or not json_data.get("results"):
+        results = json_data.get("results", [])
+        if not results:
             print("No results returned from API")
             await interaction.followup.send("No vehicle found with the given details.")
             return
 
-        vehicle = json_data["results"][0]
-        print(f"Using first vehicle from results: {vehicle}")
+        embeds = []
+        for vehicle in results:
+            print(f"Processing vehicle: {vehicle}")
 
-        # Build embed
-        description = "Result for"
-        if reg:
-            description = description + f", Reg: `{reg}`"
+            # Build description based on provided search params
+            description = "Result for"
+            if reg:
+                description += f", Reg: `{reg}`"
+            if fleet_number:
+                description += f", Fleet Number: `{fleet_number}`"
+            if operator_name:
+                description += f", Operator: `{operator_name}`"
 
-        if fleet_number:
-            description = description + f", Fleet Number: `{fleet_number}`"
+            embed = discord.Embed(
+                title="Vehicle Details",
+                description=description,
+                color=discord.Color.blue()
+            )
 
-        if operator_name:
-            description = description + f", Operator: `{operator_name}`"
+            # Inline Group 1
+            embed.add_field(name="Fleet Number", value=vehicle.get("fleet_number", "N/A"), inline=True)
+            embed.add_field(name="Registration", value=vehicle.get("reg", "N/A"), inline=True)
+            embed.add_field(name="\u200b", value="\u200b", inline=True)  # Spacer
 
-        embed = discord.Embed(
-            title="Vehicle Details",
-            description=description,
-            color=discord.Color.blue()
-        )
+            # Inline Group 2
+            vehicle_type = vehicle.get("vehicle_type_data", {})
+            embed.add_field(name="Type Name", value=vehicle_type.get("type_name", "N/A"), inline=True)
+            embed.add_field(name="Double Decker", value=str(vehicle_type.get("double_decker", "N/A")), inline=True)
+            embed.add_field(name="\u200b", value="\u200b", inline=True)
 
-        # Inline Group 1
-        embed.add_field(name="Fleet Number", value=vehicle.get("fleet_number", "N/A"), inline=True)
-        embed.add_field(name="Registration", value=vehicle.get("reg", "N/A"), inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)  # Spacer to force new line
+            # Inline Group 3
+            embed.add_field(name="Type", value=vehicle_type.get("type", "N/A"), inline=True)
+            embed.add_field(name="Fuel", value=vehicle_type.get("fuel", "N/A"), inline=True)
+            embed.add_field(name="\u200b", value="\u200b", inline=True)
 
-        # Inline Group 2
-        vehicle_type = vehicle.get("vehicle_type_data", {})
-        embed.add_field(name="Type Name", value=vehicle_type.get("type_name", "N/A"), inline=True)
-        embed.add_field(name="Double Decker", value=str(vehicle_type.get("double_decker", "N/A")), inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
+            # Operator
+            operator = vehicle.get("operator", {})
+            embed.add_field(name="Operator", value=operator.get("operator_name", "N/A"), inline=False)
 
-        # Inline Group 3
-        embed.add_field(name="Type", value=vehicle_type.get("type", "N/A"), inline=True)
-        embed.add_field(name="Fuel", value=vehicle_type.get("fuel", "N/A"), inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=True)
+            # Link
+            link = f"https://v2.mybustimes.cc/operator/{quote(operator.get('operator_name', 'N/A'))}/vehicles/{vehicle.get('id', 'N/A')}/"
+            embed.add_field(name="More Info", value=f"[Click here]({link})", inline=False)
 
-        # Operator name (full width)
-        operator = vehicle.get("operator", {})
-        operator_name = operator.get("operator_name", "N/A")
-        operator_name_encoded = quote(operator_name)  # encode spaces only here
+            embeds.append(embed)
 
-        embed.add_field(name="Operator", value=operator_name, inline=False)
-        embed.add_field(name="More Info", value=f"[Click here]({link})", inline=False)
+        # Send all embeds — Discord has a limit of 10 embeds per message
+        await interaction.followup.send(embeds=embeds[:10])
 
 
 async def setup(bot):
