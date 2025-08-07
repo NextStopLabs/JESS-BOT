@@ -5,3 +5,4 @@ python-dotenv
 python-multipart
 httpx
 pyttsx3
+aiohttp

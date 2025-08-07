@@ -33,6 +33,8 @@ async def main():
     # Load only the actual discord cog
     await bot.load_extension("cogs.forum")
     await bot.load_extension("cogs.tts")
+    await bot.load_extension("cogs.vehicle_details")
+
 
     # Add FastAPI routes manually
     app.include_router(setup_routes(bot, GUILD_ID, FORUM_CHANNEL_ID, bot_ready))
@@ -47,7 +49,13 @@ async def main():
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
+    try:
+        synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
+        print(f"Synced {len(synced)} commands for guild {GUILD_ID}")
+    except Exception as e:
+        print(f"Failed to sync commands: {e}")
     bot.bot_ready.set()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
