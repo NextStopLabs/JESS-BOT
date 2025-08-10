@@ -104,7 +104,7 @@ async def on_message(message: discord.Message):
 
         # Check if this thread exists in your Django DB
         async with httpx.AsyncClient() as client:
-            check_response = await client.get(f"https://v2.mybustimes.cc/api/check-thread/{thread_id}/")
+            check_response = await client.get(f"https://www.mybustimes.cc/api/check-thread/{thread_id}/")
             if check_response.status_code == 404:
                 # Thread doesn't exist in Django, create it
                 create_payload = {
@@ -113,7 +113,7 @@ async def on_message(message: discord.Message):
                     "created_by": str(message.author),  # Discord username
                     "first_post": message.content,
                 }
-                await client.post("https://v2.mybustimes.cc/api/create-thread/", json=create_payload)
+                await client.post("https://www.mybustimes.cc/api/create-thread/", json=create_payload)
 
     # Continue posting the message to Django
     payload = {
@@ -132,13 +132,13 @@ async def on_message(message: discord.Message):
         try:
             if files:
                 await client.post(
-                    "https://v2.mybustimes.cc/api/discord-message/",
+                    "https://www.mybustimes.cc/api/discord-message/",
                     data=payload,
                     files=files,
                 )
             else:
                 await client.post(
-                    "https://v2.mybustimes.cc/api/discord-message/",
+                    "https://www.mybustimes.cc/api/discord-message/",
                     json=payload,
                 )
         except Exception as e:

@@ -36,7 +36,7 @@ class VehicleDetails(commands.Cog):
         await interaction.response.defer(thinking=True)
 
         url = (
-            f"https://v2.mybustimes.cc/api/operator/fleet/"
+            f"https://www.mybustimes.cc/api/operator/fleet/"
             f"?operator__operator_name={operator_name}&fleet_number={fleet_number}&reg={reg}&limit=10"
         )
 
@@ -103,7 +103,7 @@ class VehicleDetails(commands.Cog):
             embed.add_field(name="Operator", value=operator.get("operator_name", "N/A"), inline=False)
 
             # Link
-            link = f"https://v2.mybustimes.cc/operator/{quote(operator.get('operator_name', 'N/A'))}/vehicles/{vehicle.get('id', 'N/A')}/"
+            link = f"https://www.mybustimes.cc/operator/{quote(operator.get('operator_name', 'N/A'))}/vehicles/{vehicle.get('id', 'N/A')}/"
             embed.add_field(name="More Info", value=f"[Click here]({link})", inline=False)
 
             embeds.append(embed)
