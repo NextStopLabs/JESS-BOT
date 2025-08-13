@@ -35,20 +35,36 @@ class ForumCog(commands.Cog):
 
         channel = message.channel
 
-        # Only process messages in threads inside allowed forum channels
+        process_message = False
+        thread_id = None
+        forum_id = None
+
+        # Case 1: Message is in a thread inside an allowed forum
         if (
             isinstance(channel, discord.Thread)
             and isinstance(channel.parent, discord.ForumChannel)
             and channel.parent.id in ALLOWED_FORUM_IDS
         ):
+            process_message = True
             thread_id = str(channel.id)
+            forum_id = str(channel.parent.id)
 
+        # Case 2: Message is in a normal text channel that’s in ALLOWED_FORUM_IDS
+        elif (
+            isinstance(channel, discord.TextChannel)
+            and channel.id in ALLOWED_FORUM_IDS
+        ):
+            process_message = True
+            thread_id = str(channel.id)  # use channel id as "thread" id
+            forum_id = str(channel.id)
+
+        if process_message:
             async with httpx.AsyncClient() as client:
                 check_response = await client.get(f"https://v2.mybustimes.cc/api/check-thread/{thread_id}/")
                 if check_response.status_code == 404:
                     create_payload = {
                         "discord_channel_id": thread_id,
-                        "forum_id": str(channel.parent.id),  # ✅ forum ID added
+                        "forum_id": forum_id,
                         "title": channel.name,
                         "created_by": str(message.author),
                         "first_post": message.content,
@@ -56,12 +72,11 @@ class ForumCog(commands.Cog):
                     await client.post("https://v2.mybustimes.cc/api/create-thread/", json=create_payload)
 
                 payload = {
-                    "thread_channel_id": channel.id,
-                    "forum_id": str(channel.parent.id),  # ✅ forum ID added
+                    "thread_channel_id": thread_id,
+                    "forum_id": forum_id,
                     "author": str(message.author),
                     "content": message.content,
                 }
-
 
             files = None
             if message.attachments:
@@ -84,9 +99,8 @@ class ForumCog(commands.Cog):
                         )
                 except Exception as e:
                     print(f"Failed to send message to Django API: {e}")
-        # Still process bot commands even if not in an allowed forum
-        await self.bot.process_commands(message)
 
+        await self.bot.process_commands(message)
 
 # This is the key fix: async setup function
 async def setup(bot):
