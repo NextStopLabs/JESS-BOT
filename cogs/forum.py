@@ -6,7 +6,8 @@ ALLOWED_FORUM_IDS = [
     1399863670581891222,  # Forum forum
     1397600257398800496,  # V2 Bugs forum
     1374761374684676147,  # V2 Questions forum
-     1349105620669698048,
+    1349105620669698048,  # V2 Suggestions forum
+    1351659604614058109,  # Company Updates
 ]
 
 #ALLOWED_FORUM_IDS = [
