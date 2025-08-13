@@ -2,16 +2,17 @@ import discord
 from discord.ext import commands
 import httpx
 
-#ALLOWED_FORUM_IDS = [
-#    1399863670581891222,  # Forum forum
-#    1397600257398800496,  # V2 Bugs forum
-#    1374761374684676147,  # V2 Questions forum
-#]
-
 ALLOWED_FORUM_IDS = [
-    1399824158040260739,
-    1400468286868815932
+    1399863670581891222,  # Forum forum
+    1397600257398800496,  # V2 Bugs forum
+    1374761374684676147,  # V2 Questions forum
+     1349105620669698048,
 ]
+
+#ALLOWED_FORUM_IDS = [
+#    1399824158040260739,
+#    1400468286868815932
+#]
 
 class ForumCog(commands.Cog):
     def __init__(self, bot, guild_id, forum_channel_id, bot_ready_event):
