@@ -9,12 +9,8 @@ ALLOWED_FORUM_IDS = [
     1349105620669698048,  # V2 Suggestions forum
     1351659604614058109,  # Company Updates
     1348465750926430249,  # General
+    1390371616063750164,  # General Test
 ]
-
-#ALLOWED_FORUM_IDS = [
-#    1399824158040260739,
-#    1400468286868815932
-#]
 
 class ForumCog(commands.Cog):
     def __init__(self, bot, guild_id, forum_channel_id, bot_ready_event):
@@ -62,8 +58,10 @@ class ForumCog(commands.Cog):
                 print("❌ Text channel not in allowed list")
 
         if process_message:
+            print(f"Processing message for thread ID: {thread_id} and forum ID: {forum_id}")
             async with httpx.AsyncClient() as client:
-                check_response = await client.get(f"https://v2.mybustimes.cc/api/check-thread/{thread_id}/")
+                check_response = await client.get(f"https://www.mybustimes.cc/api/check-thread/{thread_id}/")
+                print(f"Check response status code: {check_response.status_code}")
                 if check_response.status_code == 404:
                     create_payload = {
                         "discord_channel_id": thread_id,
@@ -72,7 +70,9 @@ class ForumCog(commands.Cog):
                         "created_by": str(message.author),
                         "first_post": message.content,
                     }
-                    await client.post("https://v2.mybustimes.cc/api/create-thread/", json=create_payload)
+                    print(f"Creating new thread with payload: {create_payload}")
+                    await client.post("https://www.mybustimes.cc/api/create-thread/", json=create_payload)
+                    print(f"Created new thread: {create_payload}")
 
                 payload = {
                     "thread_channel_id": thread_id,
@@ -88,18 +88,23 @@ class ForumCog(commands.Cog):
                 files = {"image": (attachment.filename, file_bytes)}
 
             async with httpx.AsyncClient() as client:
+                print(f"Sending message to Django API: {payload}")
                 try:
                     if files:
+                        print(f"Sending message with attachment to Django API: {payload}")
                         await client.post(
-                            "https://v2.mybustimes.cc/api/discord-message/",
+                            "https://www.mybustimes.cc/api/discord-message/",
                             data=payload,
                             files=files,
                         )
+                        print(f"Sent message with attachment to Django API: {payload}")
                     else:
+                        print(f"Sending message without attachment to Django API: {payload}")
                         await client.post(
-                            "https://v2.mybustimes.cc/api/discord-message/",
+                            "https://www.mybustimes.cc/api/discord-message/",
                             json=payload,
                         )
+                        print(f"Sent message without attachment to Django API: {payload}")
                 except Exception as e:
                     print(f"Failed to send message to Django API: {e}")
 
