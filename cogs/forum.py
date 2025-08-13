@@ -30,6 +30,7 @@ class ForumCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        print(f"Received message: {message.content} in channel {message.channel.id}")
         if message.author == self.bot.user:
             return
 
@@ -39,24 +40,26 @@ class ForumCog(commands.Cog):
         thread_id = None
         forum_id = None
 
-        # Case 1: Message is in a thread inside an allowed forum
-        if (
-            isinstance(channel, discord.Thread)
-            and isinstance(channel.parent, discord.ForumChannel)
-            and channel.parent.id in ALLOWED_FORUM_IDS
-        ):
-            process_message = True
-            thread_id = str(channel.id)
-            forum_id = str(channel.parent.id)
+        print(f"Processing message in channel: {channel.id} ({channel.name})")
 
-        # Case 2: Message is in a normal text channel that’s in ALLOWED_FORUM_IDS
-        elif (
-            isinstance(channel, discord.TextChannel)
-            and channel.id in ALLOWED_FORUM_IDS
-        ):
-            process_message = True
-            thread_id = str(channel.id)  # use channel id as "thread" id
-            forum_id = str(channel.id)
+        # Case 1: Message is in a thread inside an allowed forum
+        print(isinstance(channel, discord.Thread))
+        if isinstance(channel, discord.Thread):
+            parent_id = channel.parent.id if channel.parent else None
+            if parent_id in ALLOWED_FORUM_IDS:
+                process_message = True
+                thread_id = str(channel.id)
+                forum_id = str(parent_id)
+
+        elif isinstance(channel, discord.TextChannel):
+            print(f"TextChannel detected. ID in allowed list? {channel.id in ALLOWED_FORUM_IDS}")
+            if channel.id in ALLOWED_FORUM_IDS:
+                print("✅ Text channel allowed, processing message")
+                process_message = True
+                thread_id = str(channel.id)
+                forum_id = str(channel.id)
+            else:
+                print("❌ Text channel not in allowed list")
 
         if process_message:
             async with httpx.AsyncClient() as client:
