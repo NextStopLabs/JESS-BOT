@@ -64,8 +64,11 @@ class ForumCog(commands.Cog):
                 print(f"Response status code: {response.status_code}")
 
                 if response.status_code == 200:
-                    ticket = response.json()
-                    print(f"✅ Found existing ticket: {ticket}")
+                    try:
+                        ticket = response.json()
+                        print(f"✅ Found existing ticket: {ticket}")
+                    except ValueError:
+                        print("❌ Response was not valid JSON")
 
                     Username = os.getenv("Username")
                     Password = os.getenv("Password")
