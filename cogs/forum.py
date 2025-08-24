@@ -59,7 +59,7 @@ class ForumCog(commands.Cog):
             else:
 
                 # Check if a ticket exists and if so send the message to that ticket rather than the forum
-                response = requests.get(f"http://localhost:8000/api/tickets/?discord_channel_id={channel.id}")
+                response = requests.get(f"https://mybustimes.cc/api/tickets/?discord_channel_id={channel.id}")
 
                 print(f"Response status code: {response.status_code}")
 
@@ -73,7 +73,7 @@ class ForumCog(commands.Cog):
                     async with httpx.AsyncClient() as client:
                         # Authenticate user via API key
                         auth_resp = await client.post(
-                            "http://localhost:8000/api/user/",
+                            "https://mybustimes.cc/api/user/",
                             json={"username": Username, "password": Password},
                             timeout=10.0
                         )
@@ -81,7 +81,7 @@ class ForumCog(commands.Cog):
                         key = auth_resp.json()["session_key"]
 
                         # Send message to ticket
-                        ticket_resp = await client.get(f"http://localhost:8000/api/tickets/?discord_channel_id={channel.id}", timeout=10.0)
+                        ticket_resp = await client.get(f"https://mybustimes.cc/api/tickets/?discord_channel_id={channel.id}", timeout=10.0)
                         ticket_resp.raise_for_status()
                         ticket = ticket_resp.json()
 
@@ -89,7 +89,7 @@ class ForumCog(commands.Cog):
                         headers = {"Authorization": key}
 
                         await client.post(
-                            f"http://localhost:8000/api/key-auth/{ticket['id']}/messages/",
+                            f"https://mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
                             json=ticket_msg_payload,
                             headers=headers,
                             timeout=10.0
