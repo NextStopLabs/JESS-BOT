@@ -91,6 +91,8 @@ class ForumCog(commands.Cog):
                         files = {}
                         data = {"content": message.content, "sender_username": str(message.author)}
 
+                        print(f"Sending message to ticket: {data}")
+
                         # If there is an attachment in Discord
                         if message.attachments:
                             attachment = message.attachments[0]
