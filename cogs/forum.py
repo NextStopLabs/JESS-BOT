@@ -95,7 +95,7 @@ class ForumCog(commands.Cog):
                         if message.attachments:
                             attachment = message.attachments[0]
                             file_bytes = await attachment.read()
-                            files = {"file": (attachment.filename, file_bytes, attachment.content_type)}
+                            files = {"files": (attachment.filename, file_bytes, attachment.content_type)}
                         else:
                             files = {}
 
