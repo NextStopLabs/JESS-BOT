@@ -67,36 +67,35 @@ class ForumCog(commands.Cog):
                     try:
                         ticket = response.json()
                         print(f"✅ Found existing ticket: {ticket}")
+                        Username = os.getenv("Username")
+                        Password = os.getenv("Password")
+                        
+                        async with httpx.AsyncClient() as client:
+                            # Authenticate user via API key
+                            auth_resp = await client.post(
+                                "https://www.mybustimes.cc/api/user/",
+                                json={"username": Username, "password": Password},
+                                timeout=10.0
+                            )
+                            auth_resp.raise_for_status()
+                            key = auth_resp.json()["session_key"]
+
+                            # Send message to ticket
+                            ticket_resp = await client.get(f"https://www.mybustimes.cc/api/tickets/?discord_channel_id={channel.id}", timeout=10.0)
+                            ticket_resp.raise_for_status()
+                            ticket = ticket_resp.json()
+
+                            ticket_msg_payload = {"content": message.content, "username": str(message.author)}
+                            headers = {"Authorization": key}
+
+                            await client.post(
+                                f"https://www.mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
+                                json=ticket_msg_payload,
+                                headers=headers,
+                                timeout=10.0
+                            )
                     except ValueError:
                         print("❌ Response was not valid JSON")
-
-                    Username = os.getenv("Username")
-                    Password = os.getenv("Password")
-                    
-                    async with httpx.AsyncClient() as client:
-                        # Authenticate user via API key
-                        auth_resp = await client.post(
-                            "https://www.mybustimes.cc/api/user/",
-                            json={"username": Username, "password": Password},
-                            timeout=10.0
-                        )
-                        auth_resp.raise_for_status()
-                        key = auth_resp.json()["session_key"]
-
-                        # Send message to ticket
-                        ticket_resp = await client.get(f"https://www.mybustimes.cc/api/tickets/?discord_channel_id={channel.id}", timeout=10.0)
-                        ticket_resp.raise_for_status()
-                        ticket = ticket_resp.json()
-
-                        ticket_msg_payload = {"content": message.content, "username": str(message.author)}
-                        headers = {"Authorization": key}
-
-                        await client.post(
-                            f"https://www.mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
-                            json=ticket_msg_payload,
-                            headers=headers,
-                            timeout=10.0
-                        )
 
                 else:
                     print("❌ Text channel not in allowed list")
