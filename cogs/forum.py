@@ -88,9 +88,21 @@ class ForumCog(commands.Cog):
                         ticket_msg_payload = {"content": message.content, "username": str(message.author)}
                         headers = {"Authorization": key}
 
+                        files = {}
+                        data = {"content": message.content, "username": str(message.author)}
+
+                        # If there is an attachment in Discord
+                        if message.attachments:
+                            attachment = message.attachments[0]
+                            file_bytes = await attachment.read()
+                            files = {"file": (attachment.filename, file_bytes, attachment.content_type)}
+                        else:
+                            files = {}
+
                         await client.post(
                             f"https://www.mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
-                            json=ticket_msg_payload,
+                            data=data,
+                            file=files,
                             headers=headers,
                             timeout=10.0
                         )
