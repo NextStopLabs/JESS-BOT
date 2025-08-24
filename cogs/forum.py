@@ -1,6 +1,8 @@
+import os
 import discord
 from discord.ext import commands
 import httpx
+import requests
 
 ALLOWED_FORUM_IDS = [
     1399863670581891222,  # Forum forum
@@ -55,7 +57,46 @@ class ForumCog(commands.Cog):
                 thread_id = str(channel.id)
                 forum_id = str(channel.id)
             else:
-                print("❌ Text channel not in allowed list")
+
+                # Check if a ticket exists and if so send the message to that ticket rather than the forum
+                response = requests.get(f"http://localhost:8000/api/tickets/?discord_channel_id={channel.id}")
+
+                print(f"Response status code: {response.status_code}")
+
+                if response.status_code == 200:
+                    ticket = response.json()
+                    print(f"✅ Found existing ticket: {ticket}")
+
+                    Username = os.getenv("Username")
+                    Password = os.getenv("Password")
+                    
+                    async with httpx.AsyncClient() as client:
+                        # Authenticate user via API key
+                        auth_resp = await client.post(
+                            "http://localhost:8000/api/user/",
+                            json={"username": Username, "password": Password},
+                            timeout=10.0
+                        )
+                        auth_resp.raise_for_status()
+                        key = auth_resp.json()["session_key"]
+
+                        # Send message to ticket
+                        ticket_resp = await client.get(f"http://localhost:8000/api/tickets/?discord_channel_id={channel.id}", timeout=10.0)
+                        ticket_resp.raise_for_status()
+                        ticket = ticket_resp.json()
+
+                        ticket_msg_payload = {"content": message.content, "username": str(message.author)}
+                        headers = {"Authorization": key}
+
+                        await client.post(
+                            f"http://localhost:8000/api/key-auth/{ticket['id']}/messages/",
+                            json=ticket_msg_payload,
+                            headers=headers,
+                            timeout=10.0
+                        )
+
+                else:
+                    print("❌ Text channel not in allowed list")
 
         if process_message:
             print(f"Processing message for thread ID: {thread_id} and forum ID: {forum_id}")

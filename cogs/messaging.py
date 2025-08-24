@@ -38,6 +38,29 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
             "forum_name": forum_channel.name,
             "first_message_id": message.id if message else None,
         }
+    
+    @router.post("/create-channel")
+    async def create_channel(
+        channel_name: str = Form(...),
+        category_id: int = Form(...),
+    ):
+        await bot_ready_event.wait()
+
+        guild = bot.get_guild(guild_id)
+        if guild is None:
+            raise HTTPException(status_code=404, detail="Guild not found")
+
+        category = guild.get_channel(category_id)
+        if category is None or not isinstance(category, discord.CategoryChannel):
+            raise HTTPException(status_code=404, detail="Category not found")
+
+        channel = await category.create_text_channel(name=channel_name)
+
+        return {
+            "channel_id": channel.id,
+            "channel_name": channel.name,
+            "channel_type": channel.type,
+        }
 
     @router.post("/send-message")
     async def send_message(

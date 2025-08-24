@@ -6,3 +6,4 @@ python-multipart
 httpx
 pyttsx3
 aiohttp
+requests
