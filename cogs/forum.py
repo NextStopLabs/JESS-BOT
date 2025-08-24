@@ -93,16 +93,14 @@ class ForumCog(commands.Cog):
 
                         # If there is an attachment in Discord
                         if message.attachments:
-                            attachment = message.attachments[0]
-                            file_bytes = await attachment.read()
-                            files = {"file": (attachment.filename, file_bytes, attachment.content_type)}
-                        else:
-                            files = {}
+                            for i, attachment in enumerate(message.attachments):
+                                file_bytes = await attachment.read()
+                                files[f"file{i}"] = (attachment.filename, file_bytes, attachment.content_type)
 
                         await client.post(
                             f"https://www.mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
                             data=data,
-                            file=files,
+                            files=files,
                             headers=headers,
                             timeout=10.0
                         )
