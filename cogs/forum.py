@@ -51,52 +51,69 @@ class ForumCog(commands.Cog):
 
         elif isinstance(channel, discord.TextChannel):
             print(f"TextChannel detected. ID in allowed list? {channel.id in ALLOWED_FORUM_IDS}")
+            
             if channel.id in ALLOWED_FORUM_IDS:
                 print("✅ Text channel allowed, processing message")
                 process_message = True
                 thread_id = str(channel.id)
                 forum_id = str(channel.id)
             else:
-
-                # Check if a ticket exists and if so send the message to that ticket rather than the forum
-                response = requests.get(f"https://mybustimes.cc/api/tickets/?discord_channel_id={channel.id}")
-
-                print(f"Response status code: {response.status_code}")
-
-                if response.status_code == 200:
-                    ticket = response.json()
-                    print(f"✅ Found existing ticket: {ticket}")
-
-                    Username = os.getenv("Username")
-                    Password = os.getenv("Password")
-                    
-                    async with httpx.AsyncClient() as client:
-                        # Authenticate user via API key
-                        auth_resp = await client.post(
-                            "https://mybustimes.cc/api/user/",
-                            json={"username": Username, "password": Password},
-                            timeout=10.0
+                # Use async httpx for everything
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    # Check if a ticket exists
+                    try:
+                        ticket_resp = await client.get(
+                            f"https://mybustimes.cc/api/tickets/?discord_channel_id={channel.id}"
                         )
-                        auth_resp.raise_for_status()
-                        key = auth_resp.json()["session_key"]
-
-                        # Send message to ticket
-                        ticket_resp = await client.get(f"https://mybustimes.cc/api/tickets/?discord_channel_id={channel.id}", timeout=10.0)
                         ticket_resp.raise_for_status()
-                        ticket = ticket_resp.json()
+                    except httpx.HTTPError as e:
+                        print(f"❌ Error fetching ticket: {e}")
+                        ticket_resp = None
 
-                        ticket_msg_payload = {"content": message.content, "username": str(message.author)}
-                        headers = {"Authorization": key}
+                    ticket = None
+                    if ticket_resp:
+                        try:
+                            ticket = ticket_resp.json()
+                        except ValueError:
+                            print("❌ Ticket API returned invalid JSON:", ticket_resp.text)
 
-                        await client.post(
-                            f"https://mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
-                            json=ticket_msg_payload,
-                            headers=headers,
-                            timeout=10.0
-                        )
+                    if ticket:
+                        print(f"✅ Found existing ticket: {ticket}")
 
-                else:
-                    print("❌ Text channel not in allowed list")
+                        # Authenticate user
+                        Username = os.getenv("Username")
+                        Password = os.getenv("Password")
+
+                        try:
+                            auth_resp = await client.post(
+                                "https://mybustimes.cc/api/user/",
+                                json={"username": Username, "password": Password}
+                            )
+                            auth_resp.raise_for_status()
+                            key = auth_resp.json().get("session_key")
+                        except Exception as e:
+                            print(f"❌ Authentication failed: {e}")
+                            key = None
+
+                        if key:
+                            ticket_msg_payload = {
+                                "content": message.content,
+                                "username": str(message.author)
+                            }
+                            headers = {"Authorization": key}
+
+                            try:
+                                await client.post(
+                                    f"https://mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
+                                    json=ticket_msg_payload,
+                                    headers=headers
+                                )
+                                print("✅ Message sent to ticket")
+                            except Exception as e:
+                                print(f"❌ Failed to send message: {e}")
+                    else:
+                        print("❌ Text channel not in allowed list and no ticket found")
+
 
         if process_message:
             print(f"Processing message for thread ID: {thread_id} and forum ID: {forum_id}")
