@@ -63,7 +63,7 @@ class ForumCog(commands.Cog):
                     # Check if a ticket exists
                     try:
                         ticket_resp = await client.get(
-                            f"https://mybustimes.cc/api/tickets/?discord_channel_id={channel.id}"
+                            f"https://www.mybustimes.cc/api/tickets/?discord_channel_id={channel.id}"
                         )
                         ticket_resp.raise_for_status()
                     except httpx.HTTPError as e:
@@ -86,7 +86,7 @@ class ForumCog(commands.Cog):
 
                         try:
                             auth_resp = await client.post(
-                                "https://mybustimes.cc/api/user/",
+                                "https://www.mybustimes.cc/api/user/",
                                 json={"username": Username, "password": Password}
                             )
                             auth_resp.raise_for_status()
@@ -104,7 +104,7 @@ class ForumCog(commands.Cog):
 
                             try:
                                 await client.post(
-                                    f"https://mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
+                                    f"https://www.mybustimes.cc/api/key-auth/{ticket['id']}/messages/",
                                     json=ticket_msg_payload,
                                     headers=headers
                                 )
