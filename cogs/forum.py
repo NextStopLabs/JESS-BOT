@@ -89,7 +89,7 @@ class ForumCog(commands.Cog):
                         headers = {"Authorization": key}
 
                         files = {}
-                        data = {"content": message.content, "username": str(message.author)}
+                        data = {"content": message.content, "sender_username": str(message.author)}
 
                         # If there is an attachment in Discord
                         if message.attachments:
