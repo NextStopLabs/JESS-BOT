@@ -61,6 +61,26 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
             "channel_name": channel.name,
             "channel_type": channel.type,
         }
+    
+    @router.post("/delete-channel")
+    async def delete_channel(
+        channel_id: int = Form(...),
+    ):
+        await bot_ready_event.wait()
+
+        guild = bot.get_guild(guild_id)
+        if guild is None:
+            raise HTTPException(status_code=404, detail="Guild not found")
+
+        channel = guild.get_channel(channel_id)
+        if channel is None:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        await channel.delete()
+
+        return {
+            "detail": f"Channel {channel_id} deleted successfully"
+        }
 
     @router.post("/send-message")
     async def send_message(
