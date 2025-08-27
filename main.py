@@ -18,7 +18,7 @@ intents.guilds = True
 intents.guild_messages = True
 intents.message_content = True
 intents.voice_states = True
-
+intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 bot_ready = asyncio.Event()
@@ -34,6 +34,7 @@ async def main():
     await bot.load_extension("cogs.forum")
     await bot.load_extension("cogs.tts")
     await bot.load_extension("cogs.vehicle_details")
+    await bot.load_extension("cogs.fun")
 
 
     # Add FastAPI routes manually
