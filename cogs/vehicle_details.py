@@ -28,7 +28,7 @@ class VehicleDetails(commands.Cog):
         interaction: discord.Interaction,
         reg: str = '',
         fleet_number: str = '',
-        operator_name: str = ''
+        operator_name: str = '',
     ):
         print("Command invoked: /vehicle-details")
         print(f"Input - Reg: {reg}, Fleet Number: {fleet_number}, Operator: {operator_name}")
@@ -100,10 +100,9 @@ class VehicleDetails(commands.Cog):
 
             # Operator
             operator = vehicle.get("operator", {})
-            embed.add_field(name="Operator", value=operator.get("operator_name", "N/A"), inline=False)
-
+            
             # Link
-            link = f"https://www.mybustimes.cc/operator/{quote(operator.get('operator_name', 'N/A'))}/vehicles/{vehicle.get('id', 'N/A')}/"
+            link = f"https://www.mybustimes.cc/operator/{operator.get('operator_slug', 'N/A')}/vehicles/{vehicle.get('id', 'N/A')}/"
             embed.add_field(name="More Info", value=f"[Click here]({link})", inline=False)
 
             embeds.append(embed)
