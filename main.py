@@ -35,7 +35,7 @@ async def main():
     await bot.load_extension("cogs.tts")
     await bot.load_extension("cogs.vehicle_details")
     await bot.load_extension("cogs.fun")
-
+    await bot.load_extension("cogs.general")
 
     # Add FastAPI routes manually
     app.include_router(setup_routes(bot, GUILD_ID, FORUM_CHANNEL_ID, bot_ready))

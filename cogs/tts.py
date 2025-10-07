@@ -31,7 +31,7 @@ class TtsCog(commands.Cog):
         
         async with self.connection_lock:  # Prevent multiple simultaneous connections
             if not interaction.user.voice or not interaction.user.voice.channel:
-                await interaction.followup.send("You are not connected to a voice channel!", ephemeral=True)
+                await interaction.followup.send("You are not connected to a voice channel!", ephemeral=False)
                 return
 
             channel = interaction.user.voice.channel
@@ -39,7 +39,7 @@ class TtsCog(commands.Cog):
 
             # Check if bot is already in the same channel
             if voice_client and voice_client.channel == channel and voice_client.is_connected():
-                await interaction.followup.send(f"I'm already in {channel.name}!", ephemeral=True)
+                await interaction.followup.send(f"I'm already in {channel.name}!", ephemeral=False)
                 return
 
             # Reset reconnection attempts and re-enable auto-reconnect when manually joining
@@ -66,7 +66,7 @@ class TtsCog(commands.Cog):
 
             except Exception as e:
                 print(f"Error joining voice channel: {e}")
-                await interaction.followup.send(f"Failed to join the voice channel: {str(e)}", ephemeral=True)
+                await interaction.followup.send(f"Failed to join the voice channel: {str(e)}", ephemeral=False)
 
     @discord.app_commands.command(name="leave", description="Leave the current voice channel")
     async def leave(self, interaction: discord.Interaction):
@@ -76,7 +76,7 @@ class TtsCog(commands.Cog):
         voice_client = self.get_voice_client()
         
         if not voice_client or not voice_client.is_connected():
-            await interaction.followup.send("I'm not connected to any voice channel!", ephemeral=True)
+            await interaction.followup.send("I'm not connected to any voice channel!", ephemeral=False)
             return
         
         try:
@@ -89,7 +89,7 @@ class TtsCog(commands.Cog):
             await interaction.followup.send(f"Left {channel_name}!")
         except Exception as e:
             print(f"Error leaving voice channel: {e}")
-            await interaction.followup.send(f"Failed to leave the voice channel: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"Failed to leave the voice channel: {str(e)}", ephemeral=False)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
