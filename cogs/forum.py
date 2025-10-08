@@ -23,12 +23,10 @@ class ForumCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"{self.bot.user} is connected!")
         self.bot_ready.set()
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        print(f"Received message: {message.content} in channel {message.channel.id}")
         if message.author == self.bot.user:
             return
 
@@ -38,10 +36,7 @@ class ForumCog(commands.Cog):
         thread_id = None
         forum_id = None
 
-        print(f"Processing message in channel: {channel.id} ({channel.name})")
-
         # Case 1: Message is in a thread inside an allowed forum
-        print(isinstance(channel, discord.Thread))
         if isinstance(channel, discord.Thread):
             parent_id = channel.parent.id if channel.parent else None
             if parent_id in ALLOWED_FORUM_IDS:
@@ -50,9 +45,7 @@ class ForumCog(commands.Cog):
                 forum_id = str(parent_id)
 
         elif isinstance(channel, discord.TextChannel):
-            print(f"TextChannel detected. ID in allowed list? {channel.id in ALLOWED_FORUM_IDS}")
             if channel.id in ALLOWED_FORUM_IDS:
-                print("✅ Text channel allowed, processing message")
                 process_message = True
                 thread_id = str(channel.id)
                 forum_id = str(channel.id)
@@ -61,11 +54,8 @@ class ForumCog(commands.Cog):
                 # Check if a ticket exists and if so send the message to that ticket rather than the forum
                 response = requests.get(f"https://www.mybustimes.cc/api/tickets/?discord_channel_id={channel.id}")
 
-                print(f"Response status code: {response.status_code}")
-
                 if response.status_code == 200:
                     ticket = response.json()
-                    print(f"✅ Found existing ticket: {ticket}")
 
                     Username = os.getenv("Username")
                     Password = os.getenv("Password")
@@ -91,8 +81,6 @@ class ForumCog(commands.Cog):
                         files = {}
                         data = {"content": message.content, "sender_username": str(message.author)}
 
-                        print(f"Sending message to ticket: {data}")
-
                         # If there is an attachment in Discord
                         if message.attachments:
                             attachment = message.attachments[0]
@@ -109,14 +97,9 @@ class ForumCog(commands.Cog):
                             timeout=10.0
                         )
 
-                else:
-                    print("❌ Text channel not in allowed list")
-
         if process_message:
-            print(f"Processing message for thread ID: {thread_id} and forum ID: {forum_id}")
             async with httpx.AsyncClient() as client:
                 check_response = await client.get(f"https://www.mybustimes.cc/api/check-thread/{thread_id}/")
-                print(f"Check response status code: {check_response.status_code}")
                 if check_response.status_code == 404:
                     create_payload = {
                         "discord_channel_id": thread_id,
@@ -125,9 +108,7 @@ class ForumCog(commands.Cog):
                         "created_by": str(message.author),
                         "first_post": message.content,
                     }
-                    print(f"Creating new thread with payload: {create_payload}")
                     await client.post("https://www.mybustimes.cc/api/create-thread/", json=create_payload)
-                    print(f"Created new thread: {create_payload}")
 
                 payload = {
                     "thread_channel_id": thread_id,
@@ -143,23 +124,18 @@ class ForumCog(commands.Cog):
                 files = {"image": (attachment.filename, file_bytes)}
 
             async with httpx.AsyncClient() as client:
-                print(f"Sending message to Django API: {payload}")
                 try:
                     if files:
-                        print(f"Sending message with attachment to Django API: {payload}")
                         await client.post(
                             "https://www.mybustimes.cc/api/discord-message/",
                             data=payload,
                             files=files,
                         )
-                        print(f"Sent message with attachment to Django API: {payload}")
                     else:
-                        print(f"Sending message without attachment to Django API: {payload}")
                         await client.post(
                             "https://www.mybustimes.cc/api/discord-message/",
                             json=payload,
                         )
-                        print(f"Sent message without attachment to Django API: {payload}")
                 except Exception as e:
                     print(f"Failed to send message to Django API: {e}")
 

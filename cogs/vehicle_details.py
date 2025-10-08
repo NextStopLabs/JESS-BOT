@@ -30,9 +30,6 @@ class VehicleDetails(commands.Cog):
         fleet_number: str = '',
         operator_name: str = '',
     ):
-        print("Command invoked: /vehicle-details")
-        print(f"Input - Reg: {reg}, Fleet Number: {fleet_number}, Operator: {operator_name}")
-
         await interaction.response.defer(thinking=True)
 
         url = (
@@ -40,18 +37,14 @@ class VehicleDetails(commands.Cog):
             f"?operator__operator_name={operator_name}&fleet_number={fleet_number}&reg={reg}&limit=10"
         )
 
-        print(f"Constructed URL: {url}")
-
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
-                    print(f"API Response Status: {resp.status}")
                     if resp.status != 200:
                         await interaction.followup.send(f"Failed to fetch data (HTTP {resp.status})")
                         return
 
                     json_data = await resp.json()
-                    print(f"API Response Data: {json_data}")
         except Exception as e:
             logger.exception("Exception occurred while fetching vehicle details")
             await interaction.followup.send(f"An error occurred: {str(e)}")
@@ -59,13 +52,11 @@ class VehicleDetails(commands.Cog):
 
         results = json_data.get("results", [])
         if not results:
-            print("No results returned from API")
             await interaction.followup.send("No vehicle found with the given details.")
             return
 
         embeds = []
         for vehicle in results:
-            print(f"Processing vehicle: {vehicle}")
 
             # Build description based on provided search params
             description = "Result for"
