@@ -81,6 +81,29 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
         return {
             "detail": f"Channel {channel_id} deleted successfully"
         }
+    
+    @router.post("/send-message-clean")
+    async def send_message(
+        channel_id: int = Form(...),
+        message: str = Form(...),
+        image: UploadFile = File(None)
+    ):
+        await bot_ready_event.wait()
+
+        channel = bot.get_channel(channel_id)
+        if channel is None:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        content = f"{message}"
+
+        if image:
+            file_data = await image.read()
+            discord_file = discord.File(fp=io.BytesIO(file_data), filename=image.filename)
+            await channel.send(content=content, file=discord_file)
+        else:
+            await channel.send(content=content)
+
+        return {"status": "sent"}
 
     @router.post("/send-message")
     async def send_message(
@@ -96,29 +119,6 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
             raise HTTPException(status_code=404, detail="Channel not found")
 
         content = f"**{send_by}:** {message}"
-
-        if image:
-            file_data = await image.read()
-            discord_file = discord.File(fp=io.BytesIO(file_data), filename=image.filename)
-            await channel.send(content=content, file=discord_file)
-        else:
-            await channel.send(content=content)
-
-        return {"status": "sent"}
-
-    @router.post("/send-message-clean")
-    async def send_message(
-        channel_id: int = Form(...),
-        message: str = Form(...),
-        image: UploadFile = File(None)
-    ):
-        await bot_ready_event.wait()
-
-        channel = bot.get_channel(channel_id)
-        if channel is None:
-            raise HTTPException(status_code=404, detail="Channel not found")
-
-        content = f"{message}"
 
         if image:
             file_data = await image.read()
