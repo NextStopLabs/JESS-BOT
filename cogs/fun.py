@@ -17,7 +17,6 @@ class FunCog(commands.Cog):
         """Send a welcome message with a random image from local storage."""
         channel = member.guild.get_channel(WELCOME_CHANNEL_ID)
         if not channel:
-            print(f"Channel with ID {WELCOME_CHANNEL_ID} not found.")
             return
 
         # Pick a random image from the folder
