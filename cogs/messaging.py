@@ -1,7 +1,8 @@
 import io
 import discord
 from discord.ext import commands
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
+from datetime import datetime
 from pydantic import BaseModel
 import asyncio
 
@@ -81,7 +82,67 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
         return {
             "detail": f"Channel {channel_id} deleted successfully"
         }
-    
+
+    @router.post("/send-embed")
+    async def send_embed(
+        payload: dict = Body(...),
+    ):
+        """
+        Accepts a JSON body like:
+        {
+            "channel_id": 123456789,
+            "embed": {
+                "title": "Example",
+                "description": "An example embed",
+                "color": 16776960,
+                "fields": [
+                    {"name": "Field 1", "value": "Value 1", "inline": True}
+                ]
+            }
+        }
+        """
+        await bot_ready_event.wait()
+
+        channel_id = payload.get("channel_id")
+        embed_data = payload.get("embed")
+
+        if not channel_id or not embed_data:
+            raise HTTPException(status_code=400, detail="Missing 'channel_id' or 'embed' in JSON body")
+
+        channel = bot.get_channel(channel_id)
+        if channel is None:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        # Convert dict -> discord.Embed
+        embed = discord.Embed(
+            title=embed_data.get("title"),
+            description=embed_data.get("description"),
+            color=embed_data.get("color", 0x00BFFF)
+        )
+
+        # Add fields
+        for field in embed_data.get("fields", []):
+            embed.add_field(
+                name=field.get("name", "Unnamed Field"),
+                value=field.get("value", "—"),
+                inline=field.get("inline", False)
+            )
+
+        # Add footer
+        if "footer" in embed_data:
+            embed.set_footer(text=embed_data["footer"].get("text"))
+
+        # Add timestamp
+        if "timestamp" in embed_data:
+            try:
+                embed.timestamp = datetime.fromisoformat(embed_data["timestamp"])
+            except Exception:
+                pass
+
+        await channel.send(embed=embed)
+
+        return {"status": "embed sent"}
+
     @router.post("/send-message-clean")
     async def send_message(
         channel_id: int = Form(...),
