@@ -111,6 +111,69 @@ class GeneralCog(commands.Cog):
         ][:25]  # Discord only supports 25 max
 
 
+    @app_commands.guilds(discord.Object(id=guild_id))
+    @app_commands.command(name="github-issue", description="Create a new GitHub issue on MyBusTimes repo.")
+    @app_commands.describe(
+        title="Short title of the issue",
+        body="Detailed description of the issue"
+    )
+    async def github_issue(
+        self,
+        interaction: discord.Interaction,
+        title: str,
+        body: str
+    ):
+        """Creates a GitHub issue in the MyBusTimes repo."""
+        # Restrict access
+        if interaction.user.id not in self.allowed_user_ids:
+            await interaction.response.send_message(
+                "❌ You are not authorized to use this command.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(thinking=True)
+
+        github_token = os.getenv("GITHUB_ISSUE_PK")
+        if not github_token:
+            await interaction.followup.send("❌ Missing GitHub token in environment variables.")
+            return
+
+        api_url = "https://api.github.com/repos/MyBusTimes/MyBusTimes/issues"
+
+        payload = {
+            "title": title,
+            "body": f"{body}\n\n— Created by **{interaction.user}** via Discord",
+        }
+
+        headers = {
+            "Authorization": f"token {github_token}",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "MyBusTimesBot",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(api_url, json=payload, headers=headers)
+
+            if resp.status_code == 201:
+                issue_data = resp.json()
+                await interaction.followup.send(
+                    f"✅ Issue created successfully!\n🔗 {issue_data['html_url']}"
+                )
+            elif resp.status_code == 401:
+                await interaction.followup.send("❌ Unauthorized. Check your GitHub token.")
+            else:
+                await interaction.followup.send(
+                    f"❌ Failed to create issue.\nStatus: {resp.status_code}\nResponse: {resp.text}"
+                )
+
+        except httpx.RequestError as e:
+            await interaction.followup.send(f"❌ Request failed: {e}")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Unexpected error: {e}")
+
+
 async def setup(bot):
     cog = GeneralCog(bot)
     await cog.fetch_badges()  # Fetch badges at startup
