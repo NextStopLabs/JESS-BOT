@@ -139,7 +139,7 @@ class GeneralCog(commands.Cog):
             await interaction.followup.send("❌ Missing GitHub token in environment variables.")
             return
 
-        api_url = "https://api.github.com/repos/NestStopLabs/MyBusTimes/issues"
+        api_url = "https://api.github.com/repos/NextStopLabs/MyBusTimes/issues"
 
         payload = {
             "title": title,
