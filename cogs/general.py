@@ -34,6 +34,14 @@ class GeneralCog(commands.Cog):
             print(f"⚠️ Failed to fetch badges: {e}")
             self.badge_choices = [app_commands.Choice(name="Error loading badges", value="Error")]
 
+    # A command /link that will open a link on the MBT with site https://www.mybustimes.cc/u/link?username={username}
+    @app_commands.guilds(discord.Object(id=guild_id))
+    @app_commands.command(name="link", description="Links your discord account to the MBT account.")
+    async def link(self, interaction: discord.Interaction):
+        url = f"https://www.mybustimes.cc/u/link?username={interaction.user.name}"
+        await interaction.response.send_message(f"Click here to link your account: {url}", ephemeral=True)
+
+
     @app_commands.guilds(discord.Object(id=guild_id))
     @app_commands.command(name="badge", description="Gives a selected user a badge on the site.")
     @app_commands.describe(
