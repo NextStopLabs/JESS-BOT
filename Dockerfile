@@ -1,23 +1,23 @@
-# Use latest Python
 FROM python:3.12-slim
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies (if you ever add voice/TTS you will need these)
+# Install system dependencies for TTS (pyttsx3 / espeak-ng)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    espeak \
+    espeak-ng \
     ffmpeg \
+    libasound2 \
+    libasound2-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Python deps
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy everything else
+# Copy bot
 COPY . .
 
-# Expose FastAPI port
 EXPOSE 8080
 
-# Run bot
 CMD ["python", "main.py"]
