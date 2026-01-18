@@ -1,6 +1,7 @@
 import io
 import discord
 from discord.ext import commands
+from discord.utils import escape_mentions
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Body
 from datetime import datetime
 from pydantic import BaseModel
@@ -25,7 +26,11 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
         if forum_channel is None or not isinstance(forum_channel, discord.ForumChannel):
             raise HTTPException(status_code=404, detail="Forum channel not found")
 
-        result = await forum_channel.create_thread(name=request.title, content=request.content)
+        # Escape mentions to prevent pings/abuse via the API
+        safe_title = escape_mentions(request.title)
+        safe_content = escape_mentions(request.content)
+
+        result = await forum_channel.create_thread(name=safe_title, content=safe_content)
 
         if isinstance(result, tuple):
             thread, message = result
@@ -114,23 +119,28 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
             raise HTTPException(status_code=404, detail="Channel not found")
 
         # Convert dict -> discord.Embed
+        # Escape mentions in embed content to avoid accidental pings
         embed = discord.Embed(
-            title=embed_data.get("title"),
-            description=embed_data.get("description"),
+            title=escape_mentions(embed_data.get("title")) if embed_data.get("title") else None,
+            description=escape_mentions(embed_data.get("description")) if embed_data.get("description") else None,
             color=embed_data.get("color", 0x00BFFF)
         )
 
         # Add fields
         for field in embed_data.get("fields", []):
+            name = field.get("name", "Unnamed Field")
+            value = field.get("value", "—")
             embed.add_field(
-                name=field.get("name", "Unnamed Field"),
-                value=field.get("value", "—"),
+                name=escape_mentions(name),
+                value=escape_mentions(value),
                 inline=field.get("inline", False)
             )
 
         # Add footer
         if "footer" in embed_data:
-            embed.set_footer(text=embed_data["footer"].get("text"))
+            footer_text = embed_data["footer"].get("text")
+            if footer_text:
+                embed.set_footer(text=escape_mentions(footer_text))
 
         # Add timestamp
         if "timestamp" in embed_data:
@@ -155,7 +165,9 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
         if channel is None:
             raise HTTPException(status_code=404, detail="Channel not found")
 
+        # Escape mentions to prevent pings
         content = f"{message}"
+        content = escape_mentions(content)
 
         if image:
             file_data = await image.read()
@@ -179,7 +191,9 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
         if channel is None:
             raise HTTPException(status_code=404, detail="Channel not found")
 
+        # Escape mentions in both sender and message
         content = f"**{send_by}:** {message}"
+        content = escape_mentions(content)
 
         if image:
             file_data = await image.read()
