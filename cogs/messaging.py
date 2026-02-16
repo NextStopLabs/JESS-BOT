@@ -152,6 +152,10 @@ def setup_routes(bot, guild_id, forum_channel_id, bot_ready_event):
         await channel.send(embed=embed)
 
         return {"status": "embed sent"}
+    
+    @router.get("/health")
+    async def health_check():
+        return {"status": "ok"}
 
     @router.post("/send-message-clean")
     async def send_message(
