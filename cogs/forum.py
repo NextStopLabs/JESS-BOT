@@ -97,6 +97,7 @@ class ForumCog(commands.Cog):
                             headers=headers,
                             timeout=10.0
                         )
+                        print(f"Sent message to ticket {ticket['id']} from {str(message.author)}")
 
         if process_message:
             async with httpx.AsyncClient() as client:
@@ -110,6 +111,7 @@ class ForumCog(commands.Cog):
                         "first_post": message.content,
                     }
                     await client.post("https://www.mybustimes.cc/api/create-thread/", json=create_payload)
+                    print(f"Created thread for discord_channel_id={thread_id}, forum_id={forum_id}")
 
                 payload = {
                     "thread_channel_id": thread_id,
@@ -137,6 +139,7 @@ class ForumCog(commands.Cog):
                             "https://www.mybustimes.cc/api/discord-message/",
                             json=payload,
                         )
+                    print(f"Sent message to forum thread {thread_id} by {str(message.author)}")
                 except Exception as e:
                     print(f"Failed to send message to Django API: {e}")
 
