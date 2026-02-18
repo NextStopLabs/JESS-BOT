@@ -11,12 +11,12 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 ALLOWED_FORUM_IDS = [
-    1399863670581891222,  # Forum forum
+    1473536551119228928,  # Forum forum
     1397600257398800496,  # V2 Bugs forum
     1374761374684676147,  # V2 Questions forum
     1349105620669698048,  # V2 Suggestions forum
     1351659604614058109,  # Company Updates
-    1348465750926430249,  # General
+    1473516662945742996,  # General
     1390371616063750164,  # General Test
     1414748182675587203,  # Feedback
 ]
