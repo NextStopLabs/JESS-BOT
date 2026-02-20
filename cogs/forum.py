@@ -7,7 +7,7 @@ import logging
 import traceback
 
 # Basic logger for debug output; can be overridden by project logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 ALLOWED_FORUM_IDS = [
